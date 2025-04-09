@@ -1,79 +1,83 @@
-import sys, json, os, re
-from esgcet.stac_client import TransactionClient
 import argparse
+import json
+import os
+import re
+import sys
 from pathlib import Path
-from esgcet.settings import STAC_API
-import esgcet.logger as logger
+
 import esgcet.args as pub_args
+import esgcet.logger as logger
+from esgcet.settings import STAC_API
+from esgcet.stac_client import TransactionClient
 
 log = logger.ESGPubLogger()
-publog = log.return_logger('esgstacpub')
+publog = log.return_logger("esgstacpub")
 
- 
+
 item_properties = {
     "CMIP6": [
         "version",
         "access",
-        #"activity_drs",
+        # "activity_drs",
         "activity_id",
         "cf_standard_name",
         "citation_url",
-        #"data_node",
+        # "data_node",
         "data_spec_version",
-        #"dataset_id_template_",
-        #"datetime_start",
-        #"datetime_stop",
-        #"directory_format_template_",
+        # "dataset_id_template_",
+        # "datetime_start",
+        # "datetime_stop",
+        # "directory_format_template_",
         "experiment_id",
         "experiment_title",
         "frequency",
         "further_info_url",
-        #"north_degrees",
-        #"west_degrees",
-        #"south_degrees",
-        #"east_degrees",
-        #"geo",
-        #"geo_units",
+        # "north_degrees",
+        # "west_degrees",
+        # "south_degrees",
+        # "east_degrees",
+        # "geo",
+        # "geo_units",
         "grid",
         "grid_label",
-        #"height_bottom",
-        #"height_top",
-        #"height_units",
-        #"index_node",
-        #"instance_id",
+        # "height_bottom",
+        # "height_top",
+        # "height_units",
+        # "index_node",
+        # "instance_id",
         "institution_id",
-        #"latest",
-        #"master_id",
-        #"member_id",
-        #"metadata_format",
+        # "latest",
+        # "master_id",
+        # "member_id",
+        # "metadata_format",
         "mip_era",
         "model_cohort",
         "nominal_resolution",
-        #"number_of_aggregations",
-        #"number_of_files",
+        # "number_of_aggregations",
+        # "number_of_files",
         "pid",
         "product",
         "project",
         "realm",
-        #"replica",
-        #"size",
+        # "replica",
+        # "size",
         "source_id",
         "source_type",
         "sub_experiment_id",
         "table_id",
         "title",
-        #"type",
-        #"url",
+        # "type",
+        # "url",
         "variable",
         "variable_id",
         "variable_long_name",
         "variable_units",
         "variant_label",
-        #"xlink",
-        #"_version_",
+        # "xlink",
+        # "_version_",
         "retracted",
-        #"_timestamp",
-        #"score",
+        # "_timestamp",
+        # "score",
     ]
 }
 
@@ -94,8 +98,8 @@ def convert2stac(json_data):
 
     properties = {
         "datetime": None,
-        "start_datetime": dataset_doc.get("datetime_start"),
-        "end_datetime": dataset_doc.get("datetime_end"),
+        "start_datetime": dataset_doc.get("datetime_start", "1850-01-01T00:00:00Z"),
+        "end_datetime": dataset_doc.get("datetime_end", "2020-12-31T00:00:00Z"),
     }
     property_keys = item_properties.get(collection)
     for k in property_keys:
@@ -104,7 +108,9 @@ def convert2stac(json_data):
     item = {
         "type": "Feature",
         "stac_version": "1.0.0",
-        "extensions": ["https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"],
+        "stac_extensions": [
+            "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+        ],
         "id": item_id,
         "geometry": {
             "type": "Polygon",
@@ -114,35 +120,33 @@ def convert2stac(json_data):
                     [east_degrees, south_degrees],
                     [east_degrees, north_degrees],
                     [west_degrees, north_degrees],
-                    [west_degrees, south_degrees]
+                    [west_degrees, south_degrees],
                 ]
-            ]
+            ],
         },
-        "bbox": [
-            west_degrees, south_degrees, east_degrees, north_degrees
-        ],
+        "bbox": [west_degrees, south_degrees, east_degrees, north_degrees],
         "collection": collection,
         "links": [
             {
                 "rel": "self",
                 "type": "application/json",
-                "href": f"{STAC_API}/collections/{collection}/items/{item_id}"
+                "href": f"{STAC_API}/collections/{collection}/items/{item_id}",
             },
             {
                 "rel": "parent",
                 "type": "application/json",
-                "href": f"{STAC_API}/collections/{collection}"
+                "href": f"{STAC_API}/collections/{collection}",
             },
             {
                 "rel": "collection",
                 "type": "application/json",
-                "href": f"{STAC_API}/collections/{collection}"
+                "href": f"{STAC_API}/collections/{collection}",
             },
             {
                 "rel": "root",
                 "type": "application/json",
-                "href": f"{STAC_API}/collections"
-            }
+                "href": f"{STAC_API}/collections",
+            },
         ],
         "properties": properties,
     }
@@ -193,16 +197,37 @@ def convert2stac(json_data):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Publish data sets to ESGF STAC Transaction API.")
+    parser = argparse.ArgumentParser(
+        description="Publish data sets to ESGF STAC Transaction API."
+    )
 
     home = str(Path.home())
     def_config = home + "/.esg/esg.yaml"
-    parser.add_argument("--stac-api", dest="stac_api", default=None, help="Specify STAC Transaction API.")
-    parser.add_argument("--pub-rec", dest="json_data", default=None,
-                        help="JSON file output from esgpidcitepub or esgmkpubrec.")
-    parser.add_argument("--config", "-cfg", dest="cfg", default=def_config, help="Path to yaml config file.")
-    parser.add_argument("--silent", dest="silent", action="store_true", help="Enable silent mode.")
-    parser.add_argument("--verbose", dest="verbose", action="store_true", help="Enable verbose mode.")
+    parser.add_argument(
+        "--stac-api",
+        dest="stac_api",
+        default=None,
+        help="Specify STAC Transaction API.",
+    )
+    parser.add_argument(
+        "--pub-rec",
+        dest="json_data",
+        default=None,
+        help="JSON file output from esgpidcitepub or esgmkpubrec.",
+    )
+    parser.add_argument(
+        "--config",
+        "-cfg",
+        dest="cfg",
+        default=def_config,
+        help="Path to yaml config file.",
+    )
+    parser.add_argument(
+        "--silent", dest="silent", action="store_true", help="Enable silent mode."
+    )
+    parser.add_argument(
+        "--verbose", dest="verbose", action="store_true", help="Enable verbose mode."
+    )
     pub = parser.parse_args()
 
     return pub
@@ -216,19 +241,23 @@ def run():
         publog.error("Config file not found. " + ini_file + " does not exist.")
         exit(1)
     if os.path.isdir(ini_file):
-        publog.error("Config file path is a directory. Please use a complete file path.")
+        publog.error(
+            "Config file path is a directory. Please use a complete file path."
+        )
         exit(1)
     args = pub_args.PublisherArgs()
     config = args.load_config(ini_file)
 
     if not a.json_data:
-        publog.error("Input data argument missing.  Please provide either records in .json form for esgf2 publishing")
+        publog.error(
+            "Input data argument missing.  Please provide either records in .json form for esgf2 publishing"
+        )
         exit(1)
 
     if not a.silent:
         try:
-            s = config['silent']
-            if 'true' in s or 'yes' in s:
+            s = config["silent"]
+            if "true" in s or "yes" in s:
                 silent = True
             else:
                 silent = False
@@ -239,8 +268,8 @@ def run():
 
     if not a.verbose:
         try:
-            v = config['verbose']
-            if 'true' in v or 'yes' in v:
+            v = config["verbose"]
+            if "true" in v or "yes" in v:
                 verbose = True
             else:
                 verbose = False
@@ -248,7 +277,6 @@ def run():
             verbose = False
     else:
         verbose = True
-
 
     rc = True
     tc = TransactionClient(a.stac_api, silent=silent, verbose=verbose)
@@ -261,7 +289,7 @@ def run():
             exit(1)
         try:
             stac_item = convert2stac(new_json_data)
-            #publog.warn(json.dumps(stac_item, indent=4))
+            # publog.warn(json.dumps(stac_item, indent=4))
             rc = rc and tc.publish(stac_item)
         except Exception as ex:
             publog.exception("Failed to publish to STAC Transaction API")
@@ -274,7 +302,6 @@ def main():
     run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
     main()
-

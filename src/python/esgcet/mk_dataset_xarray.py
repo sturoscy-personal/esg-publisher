@@ -1,7 +1,10 @@
-import xarray, netCDF4
-from esgcet.handler_base import ESGPubHandlerBase
 import os.path
+
+import netCDF4
 import numpy as np
+import xarray
+from esgcet.handler_base import ESGPubHandlerBase
+
 
 class ESGPubXArrayHandler(ESGPubHandlerBase):
 
@@ -19,7 +22,7 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
     def get_scanfile_dict(self, scandata, mapdata):
         ret = {}
         for rec in mapdata:
-            fn = rec['file']
+            fn = rec["file"]
             ds = netCDF4.Dataset(fn)
             try:
                 ret[fn] = {"tracking_id": ds.tracking_id}
@@ -27,28 +30,28 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
                 self.publog.warn("Tracking ID not found")
                 ret[fn] = {}
         return ret
-    
+
     def get_variables(self, scanobj):
         res = {}
         for x in scanobj.variables:
             res[x] = scanobj.variables[x].attrs
         return res
-    
+
     def get_variable_list(self, variable):
         return [x for x in variable]
 
     def _get_time_str(self, timeval):
         if type(timeval.item()) is int:
             x = str(timeval)
-            idx = x.index('.')
-            return x[:idx] + 'Z'
+            idx = x.index(".")
+            return x[:idx] + "Z"
         else:
             return timeval.item().isoformat() + "Z"
-        
+
     def _get_min_max_bounds(self, latlon):
         bigarr = latlon[0] + latlon[-1]
         return float(np.min(bigarr)), float(np.max(bigarr))
-    
+
     def set_bounds(self, record, scanobj):
 
         geo_units = []
@@ -59,7 +62,7 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
                 record["north_degrees"] = float(lat[-1])
                 record["south_degrees"] = float(lat[0])
             else:
-                self.publog.warn("'lat' found but len 0")          
+                self.publog.warn("'lat' found but len 0")
         elif "latitude" in scanobj.coords:
             lat = scanobj.coords["latitude"]
             if len(lat) > 0:
@@ -68,7 +71,7 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
                     record["north_degrees"] = min
                     record["south_degrees"] = max
 
-                else:    
+                else:
                     record["north_degrees"] = lat[-1].values.item()
                     record["south_degrees"] = lat[0].values.item()
                 geo_units.append(lat.units)
@@ -83,12 +86,12 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
                 record["east_degrees"] = float(lon[-1])
                 record["west_degrees"] = float(lon[0])
             else:
-                self.publog.warn("'lon' found but len 0")          
+                self.publog.warn("'lon' found but len 0")
         elif "longitude" in scanobj.coords:
             lon = scanobj.coords["longitude"]
             if len(lon) > 0:
                 if isinstance(lon[0].values, (list, np.ndarray)):
-                    min, max = self._get_min_max_bounds(lon)   
+                    min, max = self._get_min_max_bounds(lon)
                     record["east_degrees"] = min
                     record["west_degrees"] = max
                 else:
@@ -108,11 +111,10 @@ class ESGPubXArrayHandler(ESGPubHandlerBase):
         if "plev" in scanobj.coords:
             try:
                 plev = scanobj.coords["plev"]
-                record["height_top"] = plev[0].values.item() 
-                record["height_bottom"] = plev[-1].values.item() 
+                record["height_top"] = plev[0].values.item()
+                record["height_bottom"] = plev[-1].values.item()
                 geo_units.append(plev.units)
             except:
                 self.publog.warn("plev found but not an expected type")
         if len(geo_units) > 0:
             record["geo_units"] = geo_units
-            

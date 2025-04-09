@@ -1,18 +1,23 @@
-from esgcet.pid_cite_pub import ESGPubPidCite
-from esgcet.activity_check import FieldCheck
-import tempfile
-from esgcet.generic_netcdf import GenericPublisher
 import os
+import tempfile
+
 import esgcet.logger as logger
+from esgcet.activity_check import FieldCheck
+from esgcet.generic_netcdf import GenericPublisher
+from esgcet.pid_cite_pub import ESGPubPidCite
 
 log = logger.ESGPubLogger()
 
 
 class cmip6(GenericPublisher):
 
-    scan_file = tempfile.NamedTemporaryFile()  # create a temporary file which is deleted afterward for autocurator
+    scan_file = (
+        tempfile.NamedTemporaryFile()
+    )  # create a temporary file which is deleted afterward for autocurator
     scanfn = scan_file.name
-    files = [scan_file, ]
+    files = [
+        scan_file,
+    ]
 
     def __init__(self, argdict):
         super().__init__(argdict)
@@ -26,17 +31,20 @@ class cmip6(GenericPublisher):
             self.skip_prepare = not argdict["force_prepare"]
         else:
             self.skip_prepare = argdict["skip_prepare"]
-        self.publog = log.return_logger('CMIP6', self.silent, self.verbose)
+        self.publog = log.return_logger("CMIP6", self.silent, self.verbose)
         self._disable_citation = argdict["disable_citation"]
 
     def prepare_internal(self, json_map, cmor_tables):
         from cmip6_cv import PrePARE
+
         try:
             if len(cmor_tables) <= 0:
                 raise RuntimeError(f"{cmor_tables} are not specified from config")
             if not os.path.isdir(cmor_tables):
                 raise RuntimeError(f"{cmor_tables} is not a directory")
-            self.publog.info("Iterating through filenames for PrePARE (internal version)...")
+            self.publog.info(
+                "Iterating through filenames for PrePARE (internal version)..."
+            )
             validator = PrePARE.PrePARE
             for info in json_map:
                 filename = info[1]
@@ -48,10 +56,17 @@ class cmip6(GenericPublisher):
             exit(1)
 
     def pid(self, out_json_data):
-      
-        pid = ESGPubPidCite(out_json_data, self.pid_creds, self.data_node, test=self.test,
-                            silent=self.silent, verbose=self.verbose,
-                            project_family='CMIP6', disable_cite=self._disable_citation)
+
+        pid = ESGPubPidCite(
+            out_json_data,
+            self.pid_creds,
+            self.data_node,
+            test=self.test,
+            silent=self.silent,
+            verbose=self.verbose,
+            project_family="CMIP6",
+            disable_cite=self._disable_citation,
+        )
         if self.cmor_tables:
             check = FieldCheck(self.cmor_tables, silent=self.silent)
             try:
@@ -60,7 +75,7 @@ class cmip6(GenericPublisher):
                 self.publog.exception("Activity/Metadata agreement check failed!")
                 self.cleanup()
                 exit(1)
-            
+
         try:
             new_json_data = pid.do_pidcite()
         except Exception as ex:
@@ -81,8 +96,8 @@ class cmip6(GenericPublisher):
             self.prepare_internal(map_json_data, self.cmor_tables)
 
         # step three: autocurator
-#        self.publog.info("Running autocurator...")
-#        self.autocurator(map_json_data)
+        #        self.publog.info("Running autocurator...")
+        #        self.autocurator(map_json_data)
         # step two: autocurator
         self.publog.info(f"Running Extraction... {str(self.extract_method)}")
         self.extract_method(map_json_data)

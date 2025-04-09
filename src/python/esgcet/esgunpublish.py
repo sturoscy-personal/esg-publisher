@@ -1,39 +1,80 @@
-import esgcet.unpublish as upub
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 from pathlib import Path
+
 import esgcet.args as pub_args
 import esgcet.logger as logger
-
+import esgcet.unpublish as upub
 from esgcet.mapfile import ESGPubMapConv
 
 log = logger.ESGPubLogger()
-publog = log.return_logger('esgunpublish')
+publog = log.return_logger("esgunpublish")
 
 import esgcet
 
+
 def get_args():
-    parser = argparse.ArgumentParser(description="Unpublish data sets from ESGF databases.")
+    parser = argparse.ArgumentParser(
+        description="Unpublish data sets from ESGF databases."
+    )
 
     home = str(Path.home())
     def_config = home + "/.esg/esg.yaml"
-    parser.add_argument("--index-node", dest="index_node", default=None, help="Specify index node.")
-    parser.add_argument("--data-node", dest="data_node", default=None, help="Specify data node.")
-    parser.add_argument("--certificate", "-c", dest="cert", default=None,
-                        help="Use the following certificate file in .pem form for unpublishing (use a myproxy login to generate).")
-    parser.add_argument("--delete", dest="delete", action="store_true", help="Specify deletion of dataset (default is retraction).")
-    parser.add_argument("--dset-id", dest="dset_id", default=None,
-                        help="Dataset ID for dataset to be retracted or deleted.")
-    parser.add_argument("--map", dest="map", default=None, nargs="+",
-                        help="Path(s) to a mapfile or directory(s) containing mapfiles.")    
-    parser.add_argument("--use-list", dest="dset_list", default=None,
-                        help="Path to a file containing list of dataset_ids.")
-    parser.add_argument("--config", "-i", dest="cfg", default=def_config, help="Path to config file.")
-    parser.add_argument("--version", action="version", version=f"esgunpublish v{esgcet.__version__}",help="Print the version and exit")
-    parser.add_argument("--silent", dest="silent", action="store_true", help="Enable silent mode.")
-    parser.add_argument("--verbose", dest="verbose", action="store_true", help="Enable verbose mode.")
+    parser.add_argument(
+        "--index-node", dest="index_node", default=None, help="Specify index node."
+    )
+    parser.add_argument(
+        "--data-node", dest="data_node", default=None, help="Specify data node."
+    )
+    parser.add_argument(
+        "--certificate",
+        "-c",
+        dest="cert",
+        default=None,
+        help="Use the following certificate file in .pem form for unpublishing (use a myproxy login to generate).",
+    )
+    parser.add_argument(
+        "--delete",
+        dest="delete",
+        action="store_true",
+        help="Specify deletion of dataset (default is retraction).",
+    )
+    parser.add_argument(
+        "--dset-id",
+        dest="dset_id",
+        default=None,
+        help="Dataset ID for dataset to be retracted or deleted.",
+    )
+    parser.add_argument(
+        "--map",
+        dest="map",
+        default=None,
+        nargs="+",
+        help="Path(s) to a mapfile or directory(s) containing mapfiles.",
+    )
+    parser.add_argument(
+        "--use-list",
+        dest="dset_list",
+        default=None,
+        help="Path to a file containing list of dataset_ids.",
+    )
+    parser.add_argument(
+        "--config", "-i", dest="cfg", default=def_config, help="Path to config file."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"esgunpublish v{esgcet.__version__}",
+        help="Print the version and exit",
+    )
+    parser.add_argument(
+        "--silent", dest="silent", action="store_true", help="Enable silent mode."
+    )
+    parser.add_argument(
+        "--verbose", dest="verbose", action="store_true", help="Enable verbose mode."
+    )
 
     pub = parser.parse_args()
 
@@ -46,7 +87,7 @@ def map_to_dataset(fullmap):
     map_json_data = None
     try:
         map_json_data = mapconv.mapfilerun()
-        return map_json_data[0][0].replace("#",".v") 
+        return map_json_data[0][0].replace("#", ".v")
     except Exception as ex:
         return None
 
@@ -70,6 +111,7 @@ def maps_to_dataset_list(maps):
 
     return dset_list
 
+
 def run():
     a = get_args()
 
@@ -87,17 +129,19 @@ def run():
 
     if a.cert:
         cert = a.cert
-    elif 'cert' in config:
-        cert = config['cert']
+    elif "cert" in config:
+        cert = config["cert"]
 
     if cert:
         auth = True
 
     if a.index_node is None:
         try:
-            index_node = config['index_node']
+            index_node = config["index_node"]
         except:
-            publog.exception("Index node not defined. Use the --index-node option or define in esg.ini.")
+            publog.exception(
+                "Index node not defined. Use the --index-node option or define in esg.ini."
+            )
             exit(1)
     else:
         index_node = a.index_node
@@ -106,12 +150,14 @@ def run():
     if a.dset_id:
         dset_id = a.dset_id
 
-    if not '|' in dset_id or (a.map):
+    if not "|" in dset_id or (a.map):
         if a.data_node is None:
             try:
-                data_node = config['data_node']
+                data_node = config["data_node"]
             except:
-                publog.exception("Data node not defined. Use the --data-node option or define in esg.ini.")
+                publog.exception(
+                    "Data node not defined. Use the --data-node option or define in esg.ini."
+                )
                 exit(1)
         else:
             data_node = a.data_node
@@ -123,11 +169,10 @@ def run():
     else:
         d = False
 
-        
     if not a.silent:
         try:
-            s = config['silent']
-            if 'true' in s or 'yes' in s:
+            s = config["silent"]
+            if "true" in s or "yes" in s:
                 silent = True
             else:
                 silent = False
@@ -139,8 +184,8 @@ def run():
     if not a.verbose:
         if not a.silent:
             try:
-                v = config['verbose']
-                if 'true' in v or 'yes' in v:
+                v = config["verbose"]
+                if "true" in v or "yes" in v:
                     verbose = True
                 else:
                     verbose = False
@@ -150,13 +195,15 @@ def run():
         verbose = True
         silent = False
 
-    args = { "delete": d, 
-             "data_node": data_node, 
-             "index_node": index_node, 
-             "cert": cert, 
-             "auth" :auth, 
-             "verbose" : verbose,
-             "silent" :silent }
+    args = {
+        "delete": d,
+        "data_node": data_node,
+        "index_node": index_node,
+        "cert": cert,
+        "auth": auth,
+        "verbose": verbose,
+        "silent": silent,
+    }
 
     if len(dset_id) > 0:
         args["dataset_id_lst"] = [dset_id]
@@ -170,21 +217,25 @@ def run():
 
         args["dataset_id_lst"] = dset_arr
     else:
-        publog.error("No unpublish input method specified.  Please use from one of the following arguments: --map --use-list --dset-id ; type esgunpublish --help for more info")
+        publog.error(
+            "No unpublish input method specified.  Please use from one of the following arguments: --map --use-list --dset-id ; type esgunpublish --help for more info"
+        )
         exit(1)
 
-    if (upub.check_for_pid_proj(args["dataset_id_lst"])):
+    if upub.check_for_pid_proj(args["dataset_id_lst"]):
         try:
-            pid_creds = config['pid_creds']
+            pid_creds = config["pid_creds"]
             creds_lst = []
             for it in pid_creds:
                 rec = pid_creds[it]
-                rec['url'] = it
+                rec["url"] = it
                 creds_lst.append(rec)
             args["pid_creds"] = creds_lst
         except:
-            publog.exception("PID credentials not defined. Define in config file esg.ini.")
-            exit(1)    
+            publog.exception(
+                "PID credentials not defined. Define in config file esg.ini."
+            )
+            exit(1)
 
     status = 0
     try:
@@ -194,10 +245,11 @@ def run():
         exit(1)
     exit(status)
 
+
 def main():
     run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
     main()

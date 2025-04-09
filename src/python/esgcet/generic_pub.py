@@ -1,9 +1,10 @@
+import sys
+
+import esgcet.logger as logger
+from esgcet.index_pub import ESGPubIndex
 from esgcet.mapfile import ESGPubMapConv
 from esgcet.mkd_non_nc import ESGPubMKDNonNC
 from esgcet.update import ESGPubUpdate
-from esgcet.index_pub import ESGPubIndex
-import sys
-import esgcet.logger as logger
 
 log = logger.ESGPubLogger()
 
@@ -15,7 +16,7 @@ class BasePublisher(object):
         self.fullmap = argdict["fullmap"]
         self.silent = argdict["silent"]
         self.verbose = argdict["verbose"]
-        self.cert = argdict.get("cert","")
+        self.cert = argdict.get("cert", "")
         self.index_node = argdict["index_node"]
         self.data_node = argdict["data_node"]
         self.data_roots = argdict["data_roots"]
@@ -23,12 +24,14 @@ class BasePublisher(object):
         self.replica = argdict["replica"]
         self.proj = argdict["proj"]
         self.json_file = argdict["json_file"]
-        self.auth = argdict.get("auth",False)
+        self.auth = argdict.get("auth", False)
         self.proj_config = argdict["user_project_config"]
         self.verify = argdict["verify"]
         self.mountpoints = argdict["mountpoints"]
         self.project = argdict["proj"]
-        self.publog = log.return_logger('Generic Non-NetCDF Publisher', self.silent, self.verbose)
+        self.publog = log.return_logger(
+            "Generic Non-NetCDF Publisher", self.silent, self.verbose
+        )
 
     def cleanup(self):
         pass
@@ -47,11 +50,20 @@ class BasePublisher(object):
         return map_json_data
 
     def mk_dataset(self, map_json_data):
-        mkd = ESGPubMKDNonNC(self.data_node, self.index_node, self.replica, self.globus, self.data_roots, 
-                                self.silent, self.verbose)
+        mkd = ESGPubMKDNonNC(
+            self.data_node,
+            self.index_node,
+            self.replica,
+            self.globus,
+            self.data_roots,
+            self.silent,
+            self.verbose,
+        )
         mkd.set_project(self.project)
         try:
-            out_json_data = mkd.get_records(map_json_data, self.json_file, user_project=self.proj_config)
+            out_json_data = mkd.get_records(
+                map_json_data, self.json_file, user_project=self.proj_config
+            )
         except Exception as ex:
             self.publog.exception("Failed to make dataset")
             self.cleanup()
@@ -59,7 +71,14 @@ class BasePublisher(object):
         return out_json_data
 
     def update(self, json_data):
-        up = ESGPubUpdate(self.index_node, self.cert, silent=self.silent, verbose=self.verbose, verify=self.verify, auth=self.auth)
+        up = ESGPubUpdate(
+            self.index_node,
+            self.cert,
+            silent=self.silent,
+            verbose=self.verbose,
+            verify=self.verify,
+            auth=self.auth,
+        )
         try:
             up.run(json_data)
         except Exception as ex:
@@ -67,13 +86,23 @@ class BasePublisher(object):
             self.cleanup()
             exit(1)
 
-    def index_pub(self,dataset_records):
+    def index_pub(self, dataset_records):
         arch_cfg = None
         if self.argdict["enable_archive"]:
-            arch_cfg = { "length" : int(self.argdict["archive_path_length"]) , 
-                          "archive_path" : self.argdict["archive_path"]}
+            arch_cfg = {
+                "length": int(self.argdict["archive_path_length"]),
+                "archive_path": self.argdict["archive_path"],
+            }
 
-        ip = ESGPubIndex(self.index_node, self.cert, silent=self.silent, verbose=self.verbose, verify=self.verify, auth=self.auth, arch_cfg=arch_cfg)
+        ip = ESGPubIndex(
+            self.index_node,
+            self.cert,
+            silent=self.silent,
+            verbose=self.verbose,
+            verify=self.verify,
+            auth=self.auth,
+            arch_cfg=arch_cfg,
+        )
         rc = True
         try:
             rc = ip.do_publish(dataset_records)
@@ -97,7 +126,7 @@ class BasePublisher(object):
         self.update(out_json_data)
 
         self.publog.info("Running index pub...")
-        
+
         rc = self.index_pub(out_json_data)
 
         self.publog.info("Done.")

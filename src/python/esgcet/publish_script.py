@@ -1,16 +1,17 @@
-import mapfile as mp
-import mk_dataset as mkd
-import update as up
-import pub_test as pt
-import pid_cite_pub as pid
-import os
 import json
+import os
+import subprocess
 import sys
 import tempfile
-import subprocess
-from cmip6_cv import PrePARE
-import args
 import timeit
+
+import args
+import mapfile as mp
+import mk_dataset as mkd
+import pid_cite_pub as pid
+import pub_test as pt
+import update as up
+from cmip6_cv import PrePARE
 
 
 def prepare_internal(json_map, cmor_tables):
@@ -25,7 +26,7 @@ def prepare_internal(json_map, cmor_tables):
 def check_files(files):
     for file in files:
         try:
-            myfile = open(file, 'r')
+            myfile = open(file, "r")
         except Exception as ex:
             print("Error opening file " + file + ": " + str(ex))
             exit(1)
@@ -39,11 +40,19 @@ def exit_cleanup(scan_file):
 def wrapper(func, *args, **kwargs):
     def wrapped():
         return func(*args, **kwargs)
+
     return wrapped
 
 
 def autocuratorf(autoc_command, fullmap, scanfn):
-    os.system("bash gen-five/src/python/autocurator.sh " + autoc_command + " " + fullmap + " " + scanfn)
+    os.system(
+        "bash gen-five/src/python/autocurator.sh "
+        + autoc_command
+        + " "
+        + fullmap
+        + " "
+        + scanfn
+    )
 
 
 def main(fullmap):
@@ -55,7 +64,6 @@ def main(fullmap):
     cmip6 = False
     if proj == "CMIP6":
         cmip6 = True
-
 
     files = []
     files.append(fullmap)
@@ -76,7 +84,9 @@ def main(fullmap):
         exit(1)
     cert = pub.cert
 
-    scan_file = tempfile.NamedTemporaryFile()  # create a temporary file which is deleted afterward for autocurator
+    scan_file = (
+        tempfile.NamedTemporaryFile()
+    )  # create a temporary file which is deleted afterward for autocurator
     scanfn = scan_file.name  # name to refer to tmp file
 
     # add these as command line args
@@ -106,7 +116,14 @@ def main(fullmap):
 
     # Run autocurator and all python scripts
     print("Running autocurator...")
-    os.system("bash gen-five/src/python/autocurator.sh " + autoc_command + " " + fullmap + " " + scanfn)
+    os.system(
+        "bash gen-five/src/python/autocurator.sh "
+        + autoc_command
+        + " "
+        + fullmap
+        + " "
+        + scanfn
+    )
 
     print("Done.\nMaking dataset...")
     try:
@@ -149,7 +166,7 @@ def main(fullmap):
     exit_cleanup(scan_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # os.system("export LD_LIBRARY_PATH=$CONDA_PREFIX/lib")  # this isn't working for some reason ...
     pub = args.get_args()
@@ -159,7 +176,7 @@ if __name__ == '__main__':
         myfile = open(fullmap)
         for line in myfile:
             length = len(line)
-            main(line[0:length-2])
+            main(line[0 : length - 2])
         myfile.close()
         # iterate through file in directory calling main
     else:

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class ESGPubHandlerBase(ABC):
     def __init__(self, logger):
         self.publog = logger
@@ -8,7 +9,7 @@ class ESGPubHandlerBase(ABC):
     def get_scanfile_dict(self, scandata, mapdata):
         """
         Get a dictionary associated with scanned data for the files, indexed by filename
-        File-specific metadata, eg the tracking id of the file.  
+        File-specific metadata, eg the tracking id of the file.
         """
         pass
 
@@ -37,6 +38,6 @@ class ESGPubHandlerBase(ABC):
     def set_bounds(self, record, scanobj):
         """
         Format-specific logic to set the bounds
-        record (dict): the dataset record context 
+        record (dict): the dataset record context
         """
         pass

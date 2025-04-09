@@ -43,3 +43,4 @@ generated/
 # sphinx
 docs/_build/
 
+*.egg-info/

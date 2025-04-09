@@ -1,20 +1,29 @@
+import esgcet.logger as logger
+from esgcet.cmip6 import cmip6
 from esgcet.mkd_input4mips import ESGPubMKDinput4MIPs
 from esgcet.pid_cite_pub import ESGPubPidCite
-from esgcet.cmip6 import cmip6
-import esgcet.logger as logger
 
 log = logger.ESGPubLogger()
+
 
 class input4mips(cmip6):
 
     def __init__(self, argdict):
         super().__init__(argdict)
         self.MKD_Construct = ESGPubMKDinput4MIPs
-        self.publog = log.return_logger('input4MIPs', self.silent, self.verbose)
+        self.publog = log.return_logger("input4MIPs", self.silent, self.verbose)
 
     def pid(self, out_json_data):
 
-        pid = ESGPubPidCite(out_json_data, self.pid_creds, self.data_node, test=self.test, silent=self.silent, verbose=self.verbose, disable_cite=self._disable_citation)
+        pid = ESGPubPidCite(
+            out_json_data,
+            self.pid_creds,
+            self.data_node,
+            test=self.test,
+            silent=self.silent,
+            verbose=self.verbose,
+            disable_cite=self._disable_citation,
+        )
         try:
             new_json_data = pid.do_pidcite()
         except Exception as ex:
@@ -22,7 +31,6 @@ class input4mips(cmip6):
             self.cleanup()
             exit(1)
         return new_json_data
-
 
     def workflow(self):
 

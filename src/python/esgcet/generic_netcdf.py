@@ -1,24 +1,29 @@
+import json
+import os
+import sys
+import tempfile
+import traceback
+
+import esgcet.logger as logger
+from esgcet.generic_pub import BasePublisher
+from esgcet.mk_dataset import ESGPubMakeDataset
 from esgcet.mk_dataset_autoc import ESGPubAutocHandler
 from esgcet.mk_dataset_xarray import ESGPubXArrayHandler
-from esgcet.mk_dataset import ESGPubMakeDataset
-
-import json, os, sys
-import tempfile
-from esgcet.generic_pub import BasePublisher
-import traceback
-import esgcet.logger as logger
 
 log = logger.ESGPubLogger()
 
+
 class GenericPublisher(BasePublisher):
 
-    scan_file = tempfile.NamedTemporaryFile()  # create a temporary file which is deleted afterward for autocurator
+    scan_file = (
+        tempfile.NamedTemporaryFile()
+    )  # create a temporary file which is deleted afterward for autocurator
     scanfn = scan_file.name
 
     def __init__(self, argdict):
         super().__init__(argdict)
 
-        self.MKD_Construct = ESGPubMakeDataset        
+        self.MKD_Construct = ESGPubMakeDataset
         if argdict["autoc_command"]:
             self.autoc_command = argdict["autoc_command"]
             self.format_handler = ESGPubAutocHandler
@@ -28,7 +33,9 @@ class GenericPublisher(BasePublisher):
             self.extract_method = self.xarray_load
             self.format_handler = ESGPubXArrayHandler
 
-        self.publog = log.return_logger('Generic NetCDF Publisher', self.silent, self.verbose)
+        self.publog = log.return_logger(
+            "Generic NetCDF Publisher", self.silent, self.verbose
+        )
         self._disable_further_info = argdict["disable_further_info"]
 
     def cleanup(self):
@@ -40,7 +47,6 @@ class GenericPublisher(BasePublisher):
         """
         self.xarray_set = self.format_handler.xarray_load(map_json_data)
 
-
     def autocurator(self, map_json_data):
         """
         Autocurator
@@ -49,21 +55,33 @@ class GenericPublisher(BasePublisher):
 
         destpath = os.path.dirname(datafile)
         outname = os.path.basename(datafile)
-        idx = outname.rfind('.')
+        idx = outname.rfind(".")
 
         autstr = self.autoc_command + ' --out_pretty --out_json {} --files "{}/*.nc"'
         self.publog.debug(f"RUNNING {autstr}")
         stat = os.system(autstr.format(self.scanfn, destpath))
         if os.WEXITSTATUS(stat) != 0:
-            self.publog.error("Autocurator exited with exit code: " + str(os.WEXITSTATUS(stat)))
+            self.publog.error(
+                "Autocurator exited with exit code: " + str(os.WEXITSTATUS(stat))
+            )
             self.cleanup()
             exit(os.WEXITSTATUS(stat))
 
     def mk_dataset(self, map_json_data):
-        
-        https_url = self.argdict.get("https_url",None)    
-        mkd = self.MKD_Construct(self.data_node, self.index_node, self.replica, self.globus, self.data_roots, 
-                                 https_url, self.format_handler, self.silent, self.verbose, skip_opendap=self.argdict.get("skip_opendap",False))
+
+        https_url = self.argdict.get("https_url", None)
+        mkd = self.MKD_Construct(
+            self.data_node,
+            self.index_node,
+            self.replica,
+            self.globus,
+            self.data_roots,
+            https_url,
+            self.format_handler,
+            self.silent,
+            self.verbose,
+            skip_opendap=self.argdict.get("skip_opendap", False),
+        )
         mkd.set_project(self.project)
 
         if self.autoc_command:
@@ -72,7 +90,9 @@ class GenericPublisher(BasePublisher):
             scan_arg = self.xarray_set
 
         try:
-            out_json_data = mkd.get_records(map_json_data, scan_arg, self.json_file, user_project=self.proj_config)
+            out_json_data = mkd.get_records(
+                map_json_data, scan_arg, self.json_file, user_project=self.proj_config
+            )
         except Exception as ex:
             self.publog.exception("Failed to make dataset")
             self.cleanup()

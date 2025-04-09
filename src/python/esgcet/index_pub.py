@@ -1,6 +1,7 @@
-from esgcet.pub_client import publisherClient
-import esgcet.logger as logger
 import os
+
+import esgcet.logger as logger
+from esgcet.pub_client import publisherClient
 
 log = logger.ESGPubLogger()
 
@@ -9,14 +10,31 @@ class ESGPubIndex:
     """
     Wrapper class for push-publishing of records to the index node.
     """
-    def __init__(self, hostname, cert_fn="", verbose=False, silent=False, verify=False, auth=True, arch_cfg=None):
+
+    def __init__(
+        self,
+        hostname,
+        cert_fn="",
+        verbose=False,
+        silent=False,
+        verify=False,
+        auth=True,
+        arch_cfg=None,
+    ):
         """
         Constructor, creates a "client" object
         """
         self.silent = silent
         self.verbose = verbose
-        self.pubCli = publisherClient(cert_fn, hostname, verify=verify, verbose=self.verbose, silent=self.silent, auth=auth)
-        self.publog = log.return_logger('Index Publication', silent, verbose)
+        self.pubCli = publisherClient(
+            cert_fn,
+            hostname,
+            verify=verify,
+            verbose=self.verbose,
+            silent=self.silent,
+            auth=auth,
+        )
+        self.publog = log.return_logger("Index Publication", silent, verbose)
         self.arch_cfg = arch_cfg
 
     def gen_xml(self, d):
@@ -27,7 +45,7 @@ class ESGPubIndex:
 
             val = d[key]
             if key == "description":
-                val = ' '.join(val)
+                val = " ".join(val)
                 out.append('  <field name="{}">{}</field>\n'.format(key, val))
             elif type(val) is list:
                 for vv in val:
@@ -35,10 +53,10 @@ class ESGPubIndex:
             else:
                 out.append('  <field name="{}">{}</field>\n'.format(key, val))
         out.append("</doc>\n")
-        return ''.join(out)
+        return "".join(out)
 
     def do_publish(self, dataset):
-        """ handle dataset publishing
+        """handle dataset publishing
         dataset (list) of dictionary records
         """
         rc = True
@@ -49,7 +67,9 @@ class ESGPubIndex:
             if self.arch_cfg:
                 resp = self.archive_rec(rec, new_xml)
                 if not resp:
-                    self.publog.error("Error in archiving.  Archiving haulting.  Publication will continue")
+                    self.publog.error(
+                        "Error in archiving.  Archiving haulting.  Publication will continue"
+                    )
                     self.arch_cfg = None
                     rc = False
             self.publog.debug(new_xml)
@@ -66,15 +86,14 @@ class ESGPubIndex:
         else:
             id_key = "id"
         pathid = rec[id_key]
-        pathid = pathid[:pathid.find('|')]
-        dsparts = pathid.split('.')
+        pathid = pathid[: pathid.find("|")]
+        dsparts = pathid.split(".")
         fname = rec["id"] + ".xml"
 
-        pathlen = self.arch_cfg["length"] 
-        if pathlen  > len(dsparts):
+        pathlen = self.arch_cfg["length"]
+        if pathlen > len(dsparts):
             pathlen = len(dsparts)
-        subpath = '/'.join(dsparts[0:pathlen])
-
+        subpath = "/".join(dsparts[0:pathlen])
 
         destpath = os.path.join(self.arch_cfg["archive_path"], subpath)
         try:

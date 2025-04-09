@@ -1,14 +1,15 @@
-import sys
-from esgcet.mapfile import ESGPubMapConv
+import argparse
 import json
 import os
-import argparse
+import sys
 from pathlib import Path
-import esgcet.logger as logger
+
 import esgcet.args as pub_args
+import esgcet.logger as logger
+from esgcet.mapfile import ESGPubMapConv
 
 log = logger.ESGPubLogger()
-publog = log.return_logger('esgmapconv')
+publog = log.return_logger("esgmapconv")
 
 
 def get_args():
@@ -16,10 +17,30 @@ def get_args():
 
     home = str(Path.home())
     def_config = home + "/.esg/esg.yaml"
-    parser.add_argument("--project", dest="proj", default="", help="Set/overide the project for the given mapfile, for use with selecting the DRS or specific features, e.g. PrePARE, PID.")
-    parser.add_argument("--map", dest="map", required=True, help="Mapfile ending in .map extension, contains metadata about the record.")
-    parser.add_argument("--out-file", dest="out_file", help="Output file for map data in JSON format. Default is printed to standard out.")
-    parser.add_argument("--config", "-cfg", dest="cfg", default=def_config, help="Path to yaml config file.")
+    parser.add_argument(
+        "--project",
+        dest="proj",
+        default="",
+        help="Set/overide the project for the given mapfile, for use with selecting the DRS or specific features, e.g. PrePARE, PID.",
+    )
+    parser.add_argument(
+        "--map",
+        dest="map",
+        required=True,
+        help="Mapfile ending in .map extension, contains metadata about the record.",
+    )
+    parser.add_argument(
+        "--out-file",
+        dest="out_file",
+        help="Output file for map data in JSON format. Default is printed to standard out.",
+    )
+    parser.add_argument(
+        "--config",
+        "-cfg",
+        dest="cfg",
+        default=def_config,
+        help="Path to yaml config file.",
+    )
 
     pub = parser.parse_args()
 
@@ -33,7 +54,9 @@ def run():
         publog.error("Config file not found. " + ini_file + " does not exist.")
         exit(1)
     if os.path.isdir(ini_file):
-        publog.error("Config file path is a directory. Please use a complete file path.")
+        publog.error(
+            "Config file path is a directory. Please use a complete file path."
+        )
         exit(1)
 
     args = pub_args.PublisherArgs()
@@ -48,7 +71,7 @@ def run():
         proj = a.proj
     else:
         try:
-            proj = config['project']
+            proj = config["project"]
         except:
             pass
 
@@ -70,7 +93,7 @@ def run():
     if p:
         print(json.dumps(map_json_data))
     else:
-        with open(outfile, 'w') as of:
+        with open(outfile, "w") as of:
             json.dump(map_json_data, of)
 
 
@@ -78,6 +101,6 @@ def main():
     run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
     main()

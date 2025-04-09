@@ -1,16 +1,18 @@
-from esgcet.handler_base import ESGPubHandlerBase
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
+
+from esgcet.handler_base import ESGPubHandlerBase
+
 
 class ESGPubAutocHandler(ESGPubHandlerBase):
 
     def get_scanfile_dict(self, scandata, mapdata):
-#        self.publog.debug(json.dumps(scandata, indent=1))
-        self.publog.debug(type(scandata['file']))
+        #        self.publog.debug(json.dumps(scandata, indent=1))
+        self.publog.debug(type(scandata["file"]))
         ret = {}
-        for key in scandata['file']:
-            rec = scandata['file'][key]
-            ret[rec['name']] = rec
+        for key in scandata["file"]:
+            rec = scandata["file"][key]
+            ret[rec["name"]] = rec
         return ret
 
     def unpack_values(self, invals):
@@ -21,39 +23,39 @@ class ESGPubAutocHandler(ESGPubHandlerBase):
         return list
         """
         for x in invals:
-            if x['values']:
-                yield x['values']
+            if x["values"]:
+                yield x["values"]
 
     def get_attrs_dict(self, scanobj):
         self.publog.warn(type(scanobj))
-        return scanobj['dataset']
+        return scanobj["dataset"]
 
     def get_variables(self, scanobj):
         return scanobj["variables"]
-    
+
     def get_variable_list(self, variables):
         return list(variables.keys())
 
     def set_bounds(self, record, scanobj):
         geo_units = []
-         
+
         if "axes" in scanobj:
             axes = scanobj["axes"]
             if "lat" in axes:
                 lat = axes["lat"]
                 geo_units.append(lat["units"])
-                if 'values' not in lat.keys():
-                    record["north_degrees"] = lat['subaxes']['0']["values"][-1]
-                    record["south_degrees"] = lat['subaxes']['0']["values"][0]
+                if "values" not in lat.keys():
+                    record["north_degrees"] = lat["subaxes"]["0"]["values"][-1]
+                    record["south_degrees"] = lat["subaxes"]["0"]["values"][0]
                 else:
                     record["north_degrees"] = lat["values"][-1]
                     record["south_degrees"] = lat["values"][0]
             if "lon" in axes:
                 lon = axes["lon"]
                 geo_units.append(lon["units"])
-                if 'values' not in lon.keys():
-                    record["east_degrees"] = lon['subaxes']['0']["values"][-1]
-                    record["west_degrees"] = lon['subaxes']['0']["values"][0]
+                if "values" not in lon.keys():
+                    record["east_degrees"] = lon["subaxes"]["0"]["values"][-1]
+                    record["west_degrees"] = lon["subaxes"]["0"]["values"][0]
                 else:
                     record["east_degrees"] = lon["values"][-1]
                     record["west_degrees"] = lon["values"][0]
@@ -63,12 +65,18 @@ class ESGPubAutocHandler(ESGPubHandlerBase):
                 tu_parts = []
                 if type(time_units) is str:
                     tu_parts = time_units.split()
-                if len(tu_parts) > 2 and tu_parts[0] == "days" and tu_parts[1] == "since":
+                if (
+                    len(tu_parts) > 2
+                    and tu_parts[0] == "days"
+                    and tu_parts[1] == "since"
+                ):
                     proc_time = True
                     tu_date = tu_parts[2]  # can we ignore time component?
                     if "subaxes" in time_obj:
                         subaxes = time_obj["subaxes"]
-                        sub_values = sorted([x for x in self.unpack_values(subaxes.values())])
+                        sub_values = sorted(
+                            [x for x in self.unpack_values(subaxes.values())]
+                        )
 
                         tu_start_inc = int(sub_values[0][0])
                         tu_end_inc = int(sub_values[-1][-1])
@@ -80,12 +88,16 @@ class ESGPubAutocHandler(ESGPubHandlerBase):
                         proc_time = False
                     if proc_time:
                         try:
-                            days_since_dt = datetime.strptime(tu_date.split("T")[0], "%Y-%m-%d")
+                            days_since_dt = datetime.strptime(
+                                tu_date.split("T")[0], "%Y-%m-%d"
+                            )
                         except:
-                            tu_date = '0' + tu_date
-                            while len(tu_date.split('-')[0]) < 4:
-                                tu_date = '0' + tu_date
-                            days_since_dt = datetime.strptime(tu_date.split("T")[0], "%Y-%m-%d")
+                            tu_date = "0" + tu_date
+                            while len(tu_date.split("-")[0]) < 4:
+                                tu_date = "0" + tu_date
+                            days_since_dt = datetime.strptime(
+                                tu_date.split("T")[0], "%Y-%m-%d"
+                            )
                         dt_start = days_since_dt + timedelta(days=tu_start_inc)
                         dt_end = days_since_dt + timedelta(days=tu_end_inc)
                         if dt_start.microsecond >= 500000:
@@ -104,4 +116,3 @@ class ESGPubAutocHandler(ESGPubHandlerBase):
                 record["geo_units"] = geo_units
         else:
             self.publog.warning("No axes extracted from data files")
-
